@@ -626,17 +626,26 @@ def submit_attendance():
             status = f"Absent (Out of Range)"
             message = f"You are {distance:.2f} meters away."
             
-    # Capture device and IP info
     ip_address = request.remote_addr
     user_agent = request.headers.get('User-Agent', 'Unknown')
+    device_key = f"{ip_address}_{user_agent}"
 
-    # Optional: Prevent local duplicate submissions (per Student_ID + Session_ID)
-    already_submitted = any(
+    # Prevent local duplicate submissions per device for this session
+    already_submitted_device = any(
+        r.get('Session_ID') == session_id and r.get('Device_Key') == device_key
+        for r in in_memory_attendance_records
+    )
+    if already_submitted_device:
+        return jsonify(status="error", message="Attendance already submitted from this device.  You are allowed to submit only once")
+
+    # Prevent duplicate per Student_ID + Session_ID
+    already_submitted_student = any(
         r['Student_ID'] == student_id and r['Session_ID'] == session_id
         for r in in_memory_attendance_records
     )
-    if already_submitted:
-        return jsonify(status="error", message="You already submitted attendance from this device or network.")
+    if already_submitted_student:
+        return jsonify(status="error", message="You already submitted attendance for this session.")
+
 
 
     record_data = {
@@ -654,7 +663,8 @@ def submit_attendance():
         'Class_Lon': class_lon,
         'Radius_Meters': allowed_radius,
         'IP_Address': ip_address,      # NEW
-        'User_Agent': user_agent       # NEW
+        'User_Agent': user_agent,      # NEW
+        'Device_Key': device_key   # NEW
     }
 
     save_attendance_local(record_data) # Keep for local testing if needed, though ephemeral on Render

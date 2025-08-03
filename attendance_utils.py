@@ -37,7 +37,8 @@ def save_attendance_local(record_data):
         'Class_Lon',
         'Radius_Meters',
         'IP_Address',     # NEW
-        'User_Agent'      # NEW
+        'User_Agent',     # NEW
+        'Device_Key'
     ]
 
     # Ensure all fieldnames exist in record_data, add N/A if not
